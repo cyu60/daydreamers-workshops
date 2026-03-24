@@ -52,7 +52,7 @@ export function CheckoutButton({
         ? "Redirecting..."
         : soldOut
           ? "Sold Out"
-          : `Register & Pay — ${workshopTitle}`}
+          : "Register & Pay"}
     </button>
   );
 }
