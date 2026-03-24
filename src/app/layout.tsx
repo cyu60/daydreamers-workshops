@@ -62,6 +62,21 @@ export default function RootLayout({
       className={`${dmSerif.variable} ${dmSans.variable} ${dmMono.variable}`}
     >
       <body className="min-h-screen flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "DayDreamers Academy",
+              url: "https://workshops.daydreamers-academy.com",
+              logo: "https://workshops.daydreamers-academy.com/icon.svg",
+              description:
+                "Hands-on workshops in AI, vibe coding, automation, and engineering.",
+              sameAs: ["https://www.daydreamers-academy.com"],
+            }),
+          }}
+        />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
