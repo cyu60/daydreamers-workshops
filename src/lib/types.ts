@@ -14,6 +14,19 @@ export interface Workshop {
   tags: string[];
   status: "Published" | "Draft" | "Sold Out";
   stripePriceId: string;
+  pricingTiers?: PricingTier[];
+}
+
+export interface PricingTier {
+  id: string;
+  name: string;
+  price: number; // cents
+  stripePriceId: string;
+  description: string | null;
+  maxQuantity: number | null;
+  currentQuantity: number;
+  isActive: boolean;
+  bundleSize: number;
 }
 
 export interface Instructor {

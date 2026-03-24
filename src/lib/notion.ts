@@ -1,81 +1,150 @@
-import { Client } from "@notionhq/client";
+import { createClient } from "@supabase/supabase-js";
 import type { Workshop, Instructor } from "./types";
 
-const notion = new Client({ auth: process.env.NOTION_API_KEY });
-
-const WORKSHOPS_DB = process.env.NOTION_WORKSHOPS_DB_ID!;
-const PEOPLE_DB = process.env.NOTION_PEOPLE_DB_ID!;
-
-function richTextToPlain(richText: any[]): string {
-  return richText?.map((t: any) => t.plain_text).join("") ?? "";
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
 }
 
-function getFileUrl(files: any): string | null {
-  if (!files || files.length === 0) return null;
-  const file = files[0];
-  return file?.file?.url ?? file?.external?.url ?? null;
-}
+// ─── Workshops (from Supabase events table) ───────────────────────────
 
 export async function getWorkshops(): Promise<Workshop[]> {
-  if (!process.env.NOTION_API_KEY || !WORKSHOPS_DB) return getMockWorkshops();
+  const supabase = getSupabase();
+  if (!supabase) return getMockWorkshops();
 
-  const res = await notion.dataSources.query({
-    data_source_id: WORKSHOPS_DB,
-    filter: {
-      property: "Status",
-      select: { does_not_equal: "Draft" },
-    },
-    sorts: [{ property: "Date", direction: "ascending" }],
-  });
+  const { data: events, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("paid", true)
+    .order("event_date", { ascending: true });
 
-  return res.results.map((page: any) => {
-    const p = page.properties;
-    return {
-      id: page.id,
-      slug: richTextToPlain(p["Slug"]?.rich_text) || page.id,
-      title: richTextToPlain(p["Name"]?.title),
-      description: richTextToPlain(p["Description"]?.rich_text),
-      fullDescription: richTextToPlain(p["Full Description"]?.rich_text),
-      instructorIds: p["Instructor"]?.relation?.map((r: any) => r.id) ?? [],
-      date: p["Date"]?.date?.start ?? null,
-      duration: richTextToPlain(p["Duration"]?.rich_text),
-      price: p["Price"]?.number ?? 0,
-      capacity: p["Capacity"]?.number ?? 0,
-      spotsRemaining: p["Spots Remaining"]?.number ?? 0,
-      coverImage: getFileUrl(p["Cover Image"]?.files),
-      tags: p["Tags"]?.multi_select?.map((t: any) => t.name) ?? [],
-      status: p["Status"]?.select?.name ?? "Published",
-      stripePriceId: richTextToPlain(p["Stripe Price ID"]?.rich_text),
-    };
-  });
+  if (error || !events || events.length === 0) {
+    console.error("Failed to fetch paid events:", error);
+    return getMockWorkshops();
+  }
+
+  // Fetch pricing tiers for all paid events
+  const eventIds = events.map((e) => e.event_id);
+  const { data: tiers } = await supabase
+    .from("pricing_tiers")
+    .select("*")
+    .in("event_id", eventIds)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  const tiersByEvent = new Map<string, any[]>();
+  for (const tier of tiers ?? []) {
+    const existing = tiersByEvent.get(tier.event_id) ?? [];
+    existing.push(tier);
+    tiersByEvent.set(tier.event_id, existing);
+  }
+
+  return events.map((event) => mapEventToWorkshop(event, tiersByEvent));
 }
 
 export async function getWorkshopBySlug(
   slug: string
 ): Promise<Workshop | null> {
-  const workshops = await getWorkshops();
-  return workshops.find((w) => w.slug === slug) ?? null;
+  const supabase = getSupabase();
+  if (!supabase) {
+    const mocks = getMockWorkshops();
+    return mocks.find((w) => w.slug === slug) ?? null;
+  }
+
+  // Try slug first, then event_id
+  let { data: event } = await supabase
+    .from("events")
+    .select("*")
+    .eq("slug", slug)
+    .eq("paid", true)
+    .maybeSingle();
+
+  if (!event) {
+    ({ data: event } = await supabase
+      .from("events")
+      .select("*")
+      .eq("event_id", slug)
+      .eq("paid", true)
+      .maybeSingle());
+  }
+
+  if (!event) return null;
+
+  const { data: tiers } = await supabase
+    .from("pricing_tiers")
+    .select("*")
+    .eq("event_id", event.event_id)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  const tiersByEvent = new Map<string, any[]>();
+  tiersByEvent.set(event.event_id, tiers ?? []);
+
+  return mapEventToWorkshop(event, tiersByEvent);
 }
 
+function mapEventToWorkshop(
+  event: any,
+  tiersByEvent: Map<string, any[]>
+): Workshop {
+  const eventTiers = tiersByEvent.get(event.event_id) ?? [];
+
+  // Use the cheapest active tier as the display price
+  const cheapestTier =
+    eventTiers.length > 0
+      ? eventTiers.reduce(
+          (min, t) => (t.price < min.price ? t : min),
+          eventTiers[0]
+        )
+      : null;
+
+  const totalCapacity = event.participant_capacity ?? 0;
+  const totalSold = eventTiers.reduce(
+    (sum, t) => sum + (t.current_quantity ?? 0),
+    0
+  );
+
+  return {
+    id: event.event_id,
+    slug: event.slug || event.event_id,
+    title: event.event_name,
+    description: event.event_blurb || event.event_description || "",
+    fullDescription: event.event_description || event.event_blurb || "",
+    instructorIds: event.owner_id ? [event.owner_id] : [],
+    date: event.event_date,
+    duration: "",
+    price: cheapestTier?.price ?? event.price ?? 0,
+    capacity: totalCapacity,
+    spotsRemaining:
+      totalCapacity > 0 ? Math.max(0, totalCapacity - totalSold) : 999,
+    coverImage: event.cover_image_url,
+    tags: event.event_type ? [event.event_type] : [],
+    status:
+      totalCapacity > 0 && totalSold >= totalCapacity
+        ? ("Sold Out" as const)
+        : ("Published" as const),
+    stripePriceId:
+      cheapestTier?.stripe_price_id ?? event.stripe_price_id ?? "",
+    pricingTiers: eventTiers.map((t) => ({
+      id: t.id,
+      name: t.name,
+      price: t.price,
+      stripePriceId: t.stripe_price_id,
+      description: t.description,
+      maxQuantity: t.max_quantity,
+      currentQuantity: t.current_quantity ?? 0,
+      isActive: t.is_active,
+      bundleSize: t.bundle_size ?? 1,
+    })),
+  };
+}
+
+// ─── Instructors (mock for now — no people table in Supabase yet) ─────
+
 export async function getInstructors(): Promise<Instructor[]> {
-  if (!process.env.NOTION_API_KEY || !PEOPLE_DB) return getMockInstructors();
-
-  const res = await notion.dataSources.query({
-    data_source_id: PEOPLE_DB,
-  });
-
-  return res.results.map((page: any) => {
-    const p = page.properties;
-    return {
-      id: page.id,
-      slug: richTextToPlain(p["Slug"]?.rich_text) || page.id,
-      name: richTextToPlain(p["Name"]?.title),
-      role: richTextToPlain(p["Role"]?.rich_text),
-      bio: richTextToPlain(p["Bio"]?.rich_text),
-      photo: getFileUrl(p["Photo"]?.files),
-      linkedin: p["LinkedIn"]?.url ?? null,
-    };
-  });
+  return getMockInstructors();
 }
 
 export async function getInstructorBySlug(
@@ -92,7 +161,8 @@ export async function getInstructorsByIds(
   return all.filter((i) => ids.includes(i.id));
 }
 
-// Mock data for development without Notion
+// ─── Mock data (fallback when Supabase has no paid events) ────────────
+
 function getMockWorkshops(): Workshop[] {
   return [
     {
@@ -150,7 +220,7 @@ function getMockWorkshops(): Workshop[] {
       coverImage: null,
       tags: ["Design", "AI", "Creative"],
       status: "Sold Out",
-    stripePriceId: "",
+      stripePriceId: "",
     },
     {
       id: "4",
