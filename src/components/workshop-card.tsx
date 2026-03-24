@@ -29,7 +29,7 @@ export function WorkshopCard({
   return (
     <Link
       href={`/workshops/${workshop.slug}`}
-      className="group block bg-card border border-border rounded-[14px] overflow-hidden transition-all duration-250 hover:-translate-y-0.5 hover:shadow-[0_4px_18px_rgba(38,82,230,0.09)]"
+      className="group flex flex-col h-full bg-card border border-border rounded-[14px] overflow-hidden transition-all duration-250 hover:-translate-y-0.5 hover:shadow-[0_4px_18px_rgba(38,82,230,0.09)]"
     >
       {/* Cover image */}
       <div className="relative h-44 bg-gradient-to-br from-cobalt-soft to-paper overflow-hidden">
@@ -64,7 +64,7 @@ export function WorkshopCard({
       </div>
 
       {/* Content */}
-      <div className="p-5 flex flex-col gap-3">
+      <div className="p-5 flex flex-col gap-3 flex-1">
         {/* Tags */}
         <div className="flex flex-wrap gap-1.5">
           {workshop.tags.map((tag) => (
@@ -78,7 +78,7 @@ export function WorkshopCard({
         </div>
 
         {/* Title */}
-        <h3 className="font-[family-name:var(--font-display)] text-xl text-ink leading-snug">
+        <h3 className="font-[family-name:var(--font-display)] text-xl text-ink leading-snug line-clamp-2">
           {workshop.title}
         </h3>
 

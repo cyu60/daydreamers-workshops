@@ -53,7 +53,7 @@ export default async function Home({
         {filtered.map((workshop, i) => (
           <div
             key={workshop.id}
-            className={`fade-up ${
+            className={`fade-up h-full ${
               i % 4 === 0
                 ? ""
                 : i % 4 === 1

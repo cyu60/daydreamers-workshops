@@ -120,7 +120,9 @@ function mapEventToWorkshop(
     spotsRemaining:
       totalCapacity > 0 ? Math.max(0, totalCapacity - totalSold) : 999,
     coverImage: event.cover_image_url,
-    tags: event.event_type ? [event.event_type] : [],
+    tags: event.event_type
+      ? [event.event_type.charAt(0).toUpperCase() + event.event_type.slice(1).toLowerCase()]
+      : [],
     status:
       totalCapacity > 0 && totalSold >= totalCapacity
         ? ("Sold Out" as const)
