@@ -6,7 +6,7 @@ import { getWorkshops } from "@/lib/notion";
 export async function POST(req: NextRequest) {
   try {
     const origin = (await headers()).get("origin");
-    const { workshopId } = await req.json();
+    const { workshopId, pricingTierId } = await req.json();
 
     if (!workshopId) {
       return NextResponse.json(
@@ -32,7 +32,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!workshop.stripePriceId) {
+    // Determine which pricing tier to use
+    let selectedTier = workshop.pricingTiers?.[0];
+    if (pricingTierId && workshop.pricingTiers) {
+      const found = workshop.pricingTiers.find((t) => t.id === pricingTierId);
+      if (found) selectedTier = found;
+    }
+
+    const priceId = selectedTier?.stripePriceId ?? workshop.stripePriceId;
+
+    if (!priceId) {
       return NextResponse.json(
         { error: "Registration not yet available" },
         { status: 400 }
@@ -53,14 +62,17 @@ export async function POST(req: NextRequest) {
       mode: "payment",
       line_items: [
         {
-          price: workshop.stripePriceId,
+          price: priceId,
           quantity: 1,
         },
       ],
       metadata: {
         workshopId: workshop.id,
         workshopSlug: workshop.slug,
+        pricingTierId: selectedTier?.id ?? "",
+        bundleSize: String(selectedTier?.bundleSize ?? 1),
         product_type: "workshop",
+        source: "daydreamers-workshops",
       },
       success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/checkout/cancelled`,
