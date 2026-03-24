@@ -47,9 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     const siteUrl =
-      origin ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      "https://workshops.daydreamers-academy.com";
+      origin || "https://workshops.daydreamers-academy.com";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
