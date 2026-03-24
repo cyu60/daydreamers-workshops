@@ -25,11 +25,29 @@ export const metadata: Metadata = {
   title: "DayDreamers Workshops",
   description:
     "Hands-on workshops in AI, no-code, design, and engineering. Learn by doing with expert instructors.",
+  metadataBase: new URL("https://workshops.daydreamers-academy.com"),
   openGraph: {
-    title: "DayDreamers Workshops",
+    title: "DayDreamers Workshops — Learn by Doing",
     description:
-      "Hands-on workshops in AI, no-code, design, and engineering.",
+      "Hands-on workshops in AI, vibe coding, automation, and engineering. Small groups, expert instructors, real projects.",
     siteName: "DayDreamers Academy",
+    url: "https://workshops.daydreamers-academy.com",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "DayDreamers Workshops",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DayDreamers Workshops — Learn by Doing",
+    description:
+      "Hands-on workshops in AI, vibe coding, automation, and engineering.",
+    images: ["/og-image.png"],
   },
 };
 

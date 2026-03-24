@@ -18,9 +18,24 @@ export default async function Home({
 
   const allTags = [...new Set(workshops.flatMap((w) => w.tags))].sort();
 
+  const now = new Date();
+
+  // Sort: upcoming first (soonest first), then past (most recent first)
+  const sorted = [...workshops].sort((a, b) => {
+    const aDate = a.date ? new Date(a.date) : new Date(0);
+    const bDate = b.date ? new Date(b.date) : new Date(0);
+    const aUpcoming = aDate >= now;
+    const bUpcoming = bDate >= now;
+
+    if (aUpcoming && !bUpcoming) return -1;
+    if (!aUpcoming && bUpcoming) return 1;
+    if (aUpcoming && bUpcoming) return aDate.getTime() - bDate.getTime();
+    return bDate.getTime() - aDate.getTime(); // past: most recent first
+  });
+
   const filtered = params.tag
-    ? workshops.filter((w) => w.tags.includes(params.tag!))
-    : workshops;
+    ? sorted.filter((w) => w.tags.includes(params.tag!))
+    : sorted;
 
   const instructorMap = new Map(instructors.map((i) => [i.id, i]));
 
@@ -49,29 +64,80 @@ export default async function Home({
       </section>
 
       {/* Workshop Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map((workshop, i) => (
-          <div
-            key={workshop.id}
-            className={`fade-up h-full ${
-              i % 4 === 0
-                ? ""
-                : i % 4 === 1
-                  ? "fade-up-d1"
-                  : i % 4 === 2
-                    ? "fade-up-d2"
-                    : "fade-up-d3"
-            }`}
-          >
-            <WorkshopCard
-              workshop={workshop}
-              instructors={workshop.instructorIds
-                .map((id) => instructorMap.get(id))
-                .filter(Boolean) as any}
-            />
-          </div>
-        ))}
-      </section>
+      {(() => {
+        const upcoming = filtered.filter(
+          (w) => !w.date || new Date(w.date) >= now
+        );
+        const past = filtered.filter(
+          (w) => w.date && new Date(w.date) < now
+        );
+
+        return (
+          <>
+            {upcoming.length > 0 && (
+              <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {upcoming.map((workshop, i) => (
+                  <div
+                    key={workshop.id}
+                    className={`fade-up h-full ${
+                      i % 4 === 0
+                        ? ""
+                        : i % 4 === 1
+                          ? "fade-up-d1"
+                          : i % 4 === 2
+                            ? "fade-up-d2"
+                            : "fade-up-d3"
+                    }`}
+                  >
+                    <WorkshopCard
+                      workshop={workshop}
+                      instructors={workshop.instructorIds
+                        .map((id) => instructorMap.get(id))
+                        .filter(Boolean) as any}
+                    />
+                  </div>
+                ))}
+              </section>
+            )}
+
+            {past.length > 0 && (
+              <>
+                <div className="flex items-center gap-4 mt-16 mb-8">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-sm font-semibold text-dust tracking-wide uppercase">
+                    Past Workshops
+                  </span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-60">
+                  {past.map((workshop, i) => (
+                    <div
+                      key={workshop.id}
+                      className={`fade-up h-full ${
+                        i % 4 === 0
+                          ? ""
+                          : i % 4 === 1
+                            ? "fade-up-d1"
+                            : i % 4 === 2
+                              ? "fade-up-d2"
+                              : "fade-up-d3"
+                      }`}
+                    >
+                      <WorkshopCard
+                        workshop={workshop}
+                        isPast
+                        instructors={workshop.instructorIds
+                          .map((id) => instructorMap.get(id))
+                          .filter(Boolean) as any}
+                      />
+                    </div>
+                  ))}
+                </section>
+              </>
+            )}
+          </>
+        );
+      })()}
 
       {filtered.length === 0 && (
         <div className="text-center py-20">

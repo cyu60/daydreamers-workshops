@@ -20,9 +20,11 @@ function formatPrice(cents: number): string {
 export function WorkshopCard({
   workshop,
   instructors,
+  isPast = false,
 }: {
   workshop: Workshop;
   instructors: Instructor[];
+  isPast?: boolean;
 }) {
   const isSoldOut = workshop.status === "Sold Out" || workshop.spotsRemaining === 0;
 
@@ -56,11 +58,15 @@ export function WorkshopCard({
             </svg>
           </div>
         )}
-        {isSoldOut && (
+        {isPast ? (
+          <div className="absolute top-3 right-3 bg-dust text-white text-xs font-semibold tracking-wide uppercase px-3 py-1 rounded-full">
+            Past
+          </div>
+        ) : isSoldOut ? (
           <div className="absolute top-3 right-3 bg-ink text-white text-xs font-semibold tracking-wide uppercase px-3 py-1 rounded-full">
             Sold Out
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Content */}
