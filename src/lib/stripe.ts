@@ -8,13 +8,14 @@ export function getStripe(): Stripe {
       throw new Error("STRIPE_SECRET_KEY is not set");
     }
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      maxNetworkRetries: 3,
+      httpClient: Stripe.createFetchHttpClient(),
+      maxNetworkRetries: 2,
     });
   }
   return _stripe;
 }
 
-// Named export for backwards compat
+// Proxy so `import { stripe }` works seamlessly
 export const stripe = new Proxy({} as Stripe, {
   get(_target, prop) {
     return (getStripe() as any)[prop];
