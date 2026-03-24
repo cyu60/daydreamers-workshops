@@ -22,7 +22,7 @@ export function TagFilter({ tags }: { tags: string[] }) {
   );
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
       <button
         onClick={() => handleClick(null)}
         className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 ${

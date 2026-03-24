@@ -40,9 +40,9 @@ export default async function Home({
   const instructorMap = new Map(instructors.map((i) => [i.id, i]));
 
   return (
-    <div className="max-w-[1180px] mx-auto px-8 py-16">
+    <div className="max-w-[1180px] mx-auto px-4 sm:px-8 py-10 sm:py-16">
       {/* Hero */}
-      <section className="text-center mb-16 fade-up">
+      <section className="text-center mb-10 sm:mb-16 fade-up">
         <div className="inline-flex items-center gap-2 bg-cobalt-soft text-cobalt text-xs font-bold tracking-[0.16em] uppercase px-4 py-1.5 rounded-full mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-cobalt" />
           Live Workshops

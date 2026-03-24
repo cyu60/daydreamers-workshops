@@ -32,7 +32,7 @@ export default async function InstructorPage({
   );
 
   return (
-    <div className="max-w-[800px] mx-auto px-8 py-16">
+    <div className="max-w-[800px] mx-auto px-4 sm:px-8 py-8 sm:py-16">
       {/* Breadcrumb */}
       <nav className="mb-8 fade-up">
         <Link

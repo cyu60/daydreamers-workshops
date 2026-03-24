@@ -59,9 +59,9 @@ export default async function WorkshopPage({
   const iMap = new Map(instructors.map((i) => [i.id, i]));
 
   return (
-    <div className="max-w-[1180px] mx-auto px-8 py-16">
+    <div className="max-w-[1180px] mx-auto px-4 sm:px-8 py-8 sm:py-16">
       {/* Breadcrumb */}
-      <nav className="mb-8 fade-up">
+      <nav className="mb-6 sm:mb-8 fade-up">
         <Link
           href="/"
           className="text-sm text-dust hover:text-cobalt transition-colors duration-150"
@@ -70,7 +70,7 @@ export default async function WorkshopPage({
         </Link>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-8">
           {/* Cover */}
@@ -167,8 +167,8 @@ export default async function WorkshopPage({
           )}
         </div>
 
-        {/* Sidebar */}
-        <aside className="lg:col-span-1">
+        {/* Sidebar — hidden on mobile, shown as card on desktop */}
+        <aside className="hidden lg:block lg:col-span-1">
           <div className="sticky top-8 bg-card border border-border rounded-[14px] p-6 space-y-5 fade-up fade-up-d2">
             <div className="text-center">
               <div className="font-[family-name:var(--font-display)] text-3xl text-ink mb-1">
@@ -229,7 +229,7 @@ export default async function WorkshopPage({
 
       {/* Related workshops */}
       {related.length > 0 && (
-        <section className="mt-20">
+        <section className="mt-14 sm:mt-20">
           <h2 className="font-[family-name:var(--font-display)] text-2xl text-ink mb-6">
             You might also like
           </h2>
@@ -246,6 +246,27 @@ export default async function WorkshopPage({
           </div>
         </section>
       )}
+
+      {/* Mobile bottom bar spacer */}
+      <div className="h-24 lg:hidden" />
+
+      {/* Mobile fixed bottom CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-card/95 backdrop-blur-md border-t border-border px-4 py-3 flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <div className="font-[family-name:var(--font-display)] text-lg text-ink">
+            {formatPrice(workshop.price)}
+          </div>
+          <p className="text-xs text-dust truncate">per person</p>
+        </div>
+        <div className="flex-shrink-0">
+          <CheckoutButton
+            workshopId={workshop.id}
+            workshopTitle={workshop.title}
+            disabled={isSoldOut || !workshop.stripePriceId}
+            soldOut={isSoldOut}
+          />
+        </div>
+      </div>
     </div>
   );
 }
